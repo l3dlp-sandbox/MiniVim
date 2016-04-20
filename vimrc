@@ -7,6 +7,7 @@ let UseCustomKeyBindings = 1
 """ General options
 start " Start in Insert mode
 syntax enable " Enable syntax highlights
+set paste " Correct Ctrl+V at start
 set ttyfast " Faster refraw
 set mouse=nv " Mouse activated in Normal and Visual Mode
 set shortmess+=I " No intro when starting Vim
@@ -20,7 +21,7 @@ set cursorline " Highligt the cursor line
 set showmatch " When a bracket is inserted, briefly jump to the matching one
 set matchtime=3 " ... during this time
 set virtualedit=onemore " Allow the cursor to move just past the end of the line
-set history=100 " Keep 100 undo
+set history=1000 " Keep 1000 undo
 set wildmenu " Better command-line completion
 set scrolloff=10 " Always keep 10 lines after or before when scrolling
 set sidescrolloff=5 " Always keep 5 lines after or before when side scrolling
