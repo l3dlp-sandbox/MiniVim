@@ -7,7 +7,7 @@ let UseCustomKeyBindings = 1
 """ General options
 start " Start in Insert mode
 syntax enable " Enable syntax highlights
-set paste " Correct Ctrl+V at start
+set paste " Paste mode (no autotabs by default)
 set ttyfast " Faster refraw
 set mouse=nv " Mouse activated in Normal and Visual Mode
 set shortmess+=I " No intro when starting Vim
