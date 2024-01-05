@@ -1,11 +1,11 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" MiniVim
 " Details on : https://github.com/sd65/MiniVim
-let MiniVimVersion = "1.3"
-let UseCustomKeyBindings = 1
+let g:UseCustomKeyBindings = get(g:, 'UseCustomKeyBindings', "1")
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 """ General options
-start " Start in Insert mode
+set nocompatible " We use Vim, not Vi
 syntax enable " Enable syntax highlights
 set paste " Paste mode (no autotabs by default)
 set ttyfast " Faster refraw
@@ -41,6 +41,8 @@ set fileencoding=utf-8  " The encoding written to file.
 set synmaxcol=300 " Don't try to highlight long lines
 set guioptions-=T " Don't show toolbar in Gvim
 set iskeyword+=\- " Complete words containing a dash
+set title
+set titleold="Terminal"
 " Open all cmd args in new tabs
 execute ":silent tab all"
 
@@ -54,6 +56,20 @@ au InsertLeave * set notimeout
 function! GetFileInfo()
   let permissions = getfperm(expand('%:p'))
   echon  &filetype . ", " . GetFileSize() . ", " . permissions
+endfunction
+function! GetFileSize()
+  let bytes = getfsize(expand('%:p'))
+  if bytes <= 0
+     return ""
+  elseif bytes > 1024*1000*1000
+    return (bytes / 1024*1000*1000) . "GB"
+  elseif bytes > 1024*1000
+    return (bytes / 1024*1000) . "MB"
+  elseif bytes > 1024
+    return (bytes / 1024) . "KB"
+  else
+     return bytes . "B"
+  endif
 endfunction
 au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif | call GetFileInfo()
 
@@ -76,8 +92,39 @@ let &directory = mySwapDir
 let &backupdir = myBackupDir
 set writebackup
 
+""" Smart Paste
+let &t_ti .= "\<Esc>[?2004h"
+let &t_te .= "\<Esc>[?2004l"
+function! XTermPasteBegin(ret)
+  set pastetoggle=<f29>
+  set paste
+  return a:ret
+endfunction
+execute "set <f28>=\<Esc>[200~"
+execute "set <f29>=\<Esc>[201~"
+map <expr> <f28> XTermPasteBegin("i")
+imap <expr> <f28> XTermPasteBegin("")
+vmap <expr> <f28> XTermPasteBegin("c")
+cmap <f28> <nop>
+cmap <f29> <nop>
+
+"""  Block Commenter Helper
+autocmd FileType c,cpp,java,go      let b:comment_leader = '\/\/'
+autocmd FileType javascript         let b:comment_leader = '\/\/'
+autocmd FileType arduino            let b:comment_leader = '\/\/'
+autocmd FileType registry           let b:comment_leader = ';'
+autocmd FileType dosbatch           let b:comment_leader = '::'
+autocmd FileType sh,ruby,python     let b:comment_leader = '#'
+autocmd FileType conf,fstab,zsh     let b:comment_leader = '#'
+autocmd FileType make,Cmake,yaml    let b:comment_leader = '#'
+autocmd FileType desktop            let b:comment_leader = '#'
+autocmd FileType matlab,tex         let b:comment_leader = '%'
+autocmd FileType vim                let b:comment_leader = '"'
+autocmd FileType css                let b:comment_leader = '\/\*' | let b:comment_ender = '\*\/'
+autocmd FileType html,xml,markdown  let b:comment_leader = '<!--' | let b:comment_ender = '-->'
+
 """ Key mappings
-if UseCustomKeyBindings
+if g:UseCustomKeyBindings
 
 " Helper functions
 function! CreateShortcut(keys, cmd, where, ...)
@@ -116,11 +163,11 @@ function! MyQuit()
   endif
 endfunction
 function! MySave()
-  let cantSave = "echo 'Can\'t save the file: ' . v:exception | return"
+  let cantSave = "echo \"Can't save the file: \" . v:exception | return"
   let notSaved = "redraw | echo 'This buffer was NOT saved!' | return"
   try
     silent w
-  catch /:E45:\|:E505:/
+  catch /:E45:\|:E505:\|:E212:/
     if (confirm("This buffer is read only! Wanna save it anyway?", "&Yes\n&No", 2)==1)
       try
         silent w!
@@ -157,20 +204,6 @@ function! MySave()
   echohl iGreen | echon "    SAVED     "
   echohl Green | echon  " " . GetFileSize() . ", " . time . ", " . permissions
   echohl None
-endfunction
-function! GetFileSize()
-  let bytes = getfsize(expand('%:p'))
-  if bytes <= 0
-     return ""
-  elseif bytes > 1024*1000*1000
-    return (bytes / 1024*1000*1000) . "GB"
-  elseif bytes > 1024*1000
-    return (bytes / 1024*1000) . "MB"
-  elseif bytes > 1024
-    return (bytes / 1024) . "KB"
-  else
-     return bytes . "B"
-  endif
 endfunction
 function! OpenLastBufferInNewTab()
     redir => ls_output
@@ -213,6 +246,27 @@ function! MenuNetrw()
     normal R
   elseif (c == "d" || c == "D")
     normal D
+  endif
+endfunction
+function! ToggleComment()
+  if exists('b:comment_leader')
+    if getline(".") =~ '^' . b:comment_leader
+      " Uncomment the line
+      execute 'silent s/^' . b:comment_leader .'\( \)\?//g'
+      if exists('b:comment_ender')
+        execute 'silent s/ ' . b:comment_ender .'$//g'
+      endif
+    elseif getline(".") =~ '^\s*$'
+      " Empty lines: ignore
+    else
+      " Comment the line
+      execute 'silent s/^/' . b:comment_leader .' /g'
+      if exists('b:comment_ender')
+        execute 'silent s/$/\ ' . b:comment_ender .'/g'
+      endif
+    endif
+  else
+    echom "Unknow comment's symbols for filetype"
   endif
 endfunction
 
@@ -271,12 +325,18 @@ call CreateShortcut("C-g", ":s/", "in", "noTrailingIInInsert")
 call CreateShortcut("C-l", "ggdG", "in")
 
 " Pageup - Move up Line
-call CreateShortcut("PageUp", ":m-2<CR>", "in")
-call CreateShortcut("PageUp", "dkP", "v")
+call CreateShortcut("PageUp", ":m-2<CR>", "inv", "restoreSelectionAfter")
 
 " Pagedown - Move down Line
 call CreateShortcut("PageDown", ":m+<CR>", "in")
-call CreateShortcut("PageDown", "dp", "v")
+call CreateShortcut("PageDown", ":m'>+<CR>", "v", "restoreSelectionAfter")
+
+" Ctrl Pageup - Move up Line booster
+call CreateShortcut("C-PageUp", ":m-16<CR>", "inv", "restoreSelectionAfter")
+
+" Ctrl Pagedown - Move down Line boosted
+call CreateShortcut("C-PageDown", ":m+15<CR>", "in")
+call CreateShortcut("C-PageDown", ":m'>+15<CR>", "v", "restoreSelectionAfter")
 
 " Ctrl C - Quit
 call CreateShortcut("C-c", ":call MyQuit()<CR>", "inv", "cmdInVisual")
@@ -322,9 +382,13 @@ call CreateShortcut("f6",":call ToggleColorColumn()<CR>", "inv")
 
 " Ctrl O - Netrw (:Explore)
 call CreateShortcut("C-o",":call OpenNetrw()<CR>", "inv", "noTrailingIInInsert", "cmdInVisual")
+
+" Ctrl \ - Toggle comments
+call CreateShortcut("C-\\", ":call ToggleComment()<CR>", "inv")
+
 let g:netrw_banner=0 " Hide banner
 let g:netrw_list_hide='\(^\|\s\s\)\zs\.\S\+' " Hide hidden files
-autocmd filetype netrw call KeysInNetrw()
+autocmd FileType netrw call KeysInNetrw()
 function! KeysInNetrw()
   " Right to enter
   nmap <buffer> <Right> <CR>
@@ -405,8 +469,10 @@ set statusline+=%{ChangeAccentColor()}
 set statusline+=%1*\ ***%{toupper(g:currentmode[mode()])}***\  " Current mode
 set statusline+=%2*\ %<%F\  " Filepath
 set statusline+=%2*\ %= " To the right
+set statusline+=%2*\ (%{&filetype}) " Filetype
 set statusline+=%2*\ %{toupper((&fenc!=''?&fenc:&enc))}\[%{&ff}] " Encoding & Fileformat
-set statusline+=%2*\ %{Modified()}\ %{ReadOnly()} " Flags
+set statusline+=%2*\ %{Modified()} " Modified Flags
+set statusline+=%2*\ %{ReadOnly()} " ReadOnly Flags
 set statusline+=%1*\ \%l/%L(%P)-%c\  " Position
 " Speed up the redraw
 au InsertLeave * call ChangeAccentColor()
@@ -520,3 +586,5 @@ hi cssValueLength ctermfg=141 ctermbg=NONE cterm=NONE guifg=#ae81ff guibg=NONE g
 hi cssCommonAttr ctermfg=81 ctermbg=NONE cterm=NONE guifg=#66d9ef guibg=NONE gui=NONE
 hi cssBraces ctermfg=NONE ctermbg=NONE cterm=NONE guifg=NONE guibg=NONE gui=NONE
 hi TabLineFill cterm=bold ctermbg=0
+" Final redraw
+call ChangeAccentColor()

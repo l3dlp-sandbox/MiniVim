@@ -4,9 +4,10 @@
 
 [![A screenshot](https://raw.githubusercontent.com/sd65/MiniVim/master/Screenshot.png)](https://www.youtube.com/watch?v=n0h_3e0FfYk)
 
+A longer and more up to date demo is available here : [Demo](https://youtu.be/3kX7GdCIjrk)
+
 ## Goals
 
-- No bullshit default key mappings
 - Mimic Sublime Text / Shell key mappings
 - Minimal: one file, **no plugin needed!**
 
@@ -34,18 +35,17 @@ If you can't clone the repo and do the above steps, just download the .vimrc to 
 
 `wget https://raw.githubusercontent.com/sd65/MiniVim/master/vimrc -O ~/.vimrc`
 
-And then add `stty -ixon` to your .zshrc or .bashrc (your shell will ignore XON/XOFF signals. Needed to remap Ctrl S, Ctrl Q).
+And then add `stty -ixon` to your .zshrc or .bashrc (your shell will ignore XON/XOFF signals. Needed to remap Ctrl S, Ctrl Q). It will prevent the terminal from "freezing" when saving a file or duplicating a line.
 
 ## How to use
 
 - **The key mappings can be used in Insert, Normal and Visual mode (yes, no need to exit Insert or Visual mode)**
-- Vim launched by default in Insert mode (yes, I mainly want to edit the file I'm opening)
 - The mouse can be used in Normal and Visual mode to scroll, select, change tab and more.
 - There are clear visual hints on which mode you currently using. Like pink=normal, blue=insert and green=visual...
 
 ### General Mappings
 
-**You hate those mappings? No problem, change the 4th line of this .vimrc to `UseCustomKeyBindings=0`.** 
+**You hate those mappings? No problem, change this in your .vimrc : `UseCustomKeyBindings=0`.**
 
 Keys | Action | Comments         
 | :---: | :---: | :---: |
@@ -68,13 +68,14 @@ Keys | Action | Comments
 `Ctrl F` | Find | Like Sublime, remember as **F**Ind
 `Ctrl H` | Search and Replace | Like Sublime
 `Ctrl G` | Search and Replace on the line | Useful when duplicating a line and editing the new one
-`PageUp` | Move the line up | Usefull function so dedicated key (don't trust me ? Try it.)
+`PageUp` | Move the line up | Usefull function so dedicated key (don't trust me ? Try it.) Ctrl is a booster too!
 `PageDown` | Move the line down | Same as above             
 `Ctrl K` | Delete the whole line/block | Like in nano, inspired by Sublime too, remember as **K**ill the line
 `Ctrl Q` | Duplicate the line/block | Remember as "dupli**q**ate"?
 `Ctrl L` | Clear/Delete all lines | Like in a shell, remember as C**l**ear
 `Ctrl D` | Delete char from the left, as `Del` | Like in a shell, remember as **D**elete
 `Ctrl N` | Autocomplete word | Default VIM mapping but interesting one 
+`Ctrl \` | Comment/Uncomment | Depends on filetype
 | **Vital** | **----------** | **----------**
 `Ctrl S` | Save | Like Sublime, remember as **S**ave
 `Ctrl C` | Quit | Like in a shell
@@ -105,6 +106,33 @@ Cmd | Action
 `:UndoCloseTab` | Reopen the last close buffer/tab in a new tab
 `:RemoveTrailingSpaces` | Remove the unwanted spaces at the end of lines
 
+## How to add plugins to MiniVim
+
+The [automated setup](#automated-setup) source in the main Vim configuration file *(.vimrc)* MiniVim.
+This means that you have a clean and standard .vimrc. 
+
+**To keep MiniVim, don't delete the `source [...]/MiniVim` instruction in the .vimrc file.**
+
+To add plugins, simply follow the plugin's instructions. You should manage them with a plugin manager as [Vundle](https://github.com/VundleVim/Vundle.vim) or the old [Pathogen](https://github.com/tpope/vim-pathogen).
+
+## How to use MiniVim with *sudo*
+
+First, you could install MiniVim as root. Or better soft link your .vimrc.
+But it's sometimes not the best solution, like in a company where the root user is shared.
+
+So, you can configure your system to use MiniVim when you `sudo vim [file]`.
+There are 2 solutions :
+- `sudo -E vim [file]` as `-E ` preserve your existing environment variables (as $HOME here and therefore your ~/.vimrc).
+- `sudoedit [file]` or `sudo -e [file]` (synonyms). To use this, you must have set your `$EDITOR` environment variable. Then, this command will make a copy of the designated file and you will edit the copy. Note that the original file will only be modified when you exit your editor ! 
+
+## How to update MiniVim ?
+
+First, you have to fetch the latest MiniVim. If you had cloned the repo, simply `git pull`. Else, re-download the lastest version on GitHub.
+
+If you setup MiniVim automatically, simply re-run the installer. It will take care of everything.
+
+If not, copy again the vimrc file to `~/.vimrc`
+
 ## Other info
 
 The file is **heavily** commented. You're welcome to open, read and change what you want. *It's easy.*
@@ -112,6 +140,7 @@ The file is **heavily** commented. You're welcome to open, read and change what 
 - Work with Vim and GVim.
 - Please keep in mind that some keys **cannot** be mapped as `Ctrl Shift Something` or `Ctrl Tab` because of Terminals limitations. I have to compose with this :confused: **If you're on Windows with Putty or similar, you may experience problems because of key codes.** [Look at this tip for PuTTY numeric keypad problems](http://vim.wikia.com/wiki/PuTTY_numeric_keypad_mappings) and [this one for other mappings that doesn't work](http://unix.stackexchange.com/questions/1709/how-to-fix-ctrl-arrows-in-vim).
 - The color scheme is based on [https://github.com/sickill/vim-monokai](Monokai).
+- Smart Paste system is based on [https://github.com/ConradIrwin/vim-bracketed-paste](ConradIrwin/vim-bracketed-paste).
 - In the bottom right-hand corner, you have numbers `115/142(90%)-10`. Line `115`, total lines `142`, position at 90% in the file and column `10`.
 - Tabulations will be expanded into two spaces, the default indent size.
 - UTF-8 by default.
@@ -121,6 +150,36 @@ The file is **heavily** commented. You're welcome to open, read and change what 
 - When opening multiple file (as `vim file1 file2`), Vim will open those files in new tabs automatically.
 
 ## Changelog
+
+### 1.5.1
+
+- Fix a bug where the terminal back buffer was mangled after exiting Vim
+
+### 1.5
+
+- Change the terminal title to the current edited file
+- Faster color mode changes
+
+### 1.4
+
+- Comment & Uncomment feature
+- Improve block move Up/Down
+- Minor bug fixes
+
+### 1.3.3
+
+- Smart paste
+- The default mode is "Normal"
+
+### 1.3.2
+
+- Configuration is kept in .vimrc to persist between updates
+- Better README
+
+### 1.3.1
+
+- New clean install with the [automated setup](#automated-setup)
+- Small fixes
 
 ### 1.3
 
